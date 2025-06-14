@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>To Do List</title>
+  </head>
+  <style>
+    :root {
+      --main-background-color: rgb(238 238 238);
+    }
+    .container {
+      width: min(600px, 90vw);
+      margin: 0 auto;
+    }
+
+    .form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .input {
+      flex: 1;
+      min-width: 200px;
+      width: auto;
+      margin-right: 0;
+    }
+
+    .add {
+      flex-shrink: 0;
+    }
+
+    .tasks .task {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tasks .task span {
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    /* فقط للشاشات الصغيرة جداً */
+    @media (max-width: 400px) {
+      .form,
+      .tasks {
+        padding: 15px;
+      }
+
+      .input {
+        min-width: 150px;
+      }
+
+      .tasks .task {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .tasks .task .buttons {
+        justify-content: center;
+        gap: 10px;
+      }
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      background-color: hsl(0deg 0% 99.41%);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .form {
+      background-color: var(--main-background-color);
+      padding: 25px;
+      height: fit-content;
+      margin-top: 25px;
+      margin-bottom: 25px;
+      border-radius: 8px;
+    }
+
+    .input {
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      margin-right: 10px;
+      width: 330px;
+    }
+
+    .input:focus {
+      outline: none;
+    }
+
+    .add {
+      color: white;
+      background-color: #ff5334;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 10px;
+    }
+
+    .add:focus {
+      outline: none;
+    }
+
+    .tasks {
+      background-color: var(--main-background-color);
+      padding: 25px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+    }
+
+    .tasks .task {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: white;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .tasks .task:not(:last-of-type) {
+      margin-bottom: 20px;
+    }
+
+    .tasks .task .buttons .delete {
+      color: white;
+      background-color: #ff1400;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 3px 7px;
+    }
+
+    .tasks .task .buttons .done {
+      color: white;
+      background-color: #ff1400;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 3px 7px;
+      margin-right: 5px;
+    }
+
+    .tasks .task .buttons .delete,
+    .tasks .task .buttons .done {
+      outline: none;
+    }
+  </style>
+  <body>
+    <div class="container">
+      <div class="form">
+        <input type="text" class="input" />
+        <input type="submit" class="add" value="Add Task" />
+      </div>
+      <div class="tasks"></div>
+    </div>
+    <script>
+      let mainContainer = document.querySelector(".container");
+
+      let form = document.querySelector(".form");
+
+      let taskInput = document.querySelector(".input");
+
+      let addButton = document.querySelector(".add");
+
+      let tasksContainer = document.querySelector(".tasks");
+
+      // let currentId = 0;
+
+      function createTask() {
+        if (taskInput.value !== "") {
+          let id = createID();
+          buildingStructure(taskInput.value, false, id);
+          addToLocalStorage(taskInput.value, false, id);
+          // Makng The Task Input Empty After Finshing
+          taskInput.value = "";
+        }
+      }
+
+      function buildingStructure(taskValue, isDone, id) {
+        // Creating The Elements & Texts
+        let newTask = document.createElement("div");
+        let newTaskText = document.createTextNode(taskValue);
+
+        let buttonsContainer = document.createElement("div");
+
+        let deleteTask = document.createElement("button");
+        let deleteTaskText = document.createTextNode("Delete");
+
+        let doneTask = document.createElement("button");
+        let doneTaskText = document.createTextNode("Done");
+
+        // Creating Classes & Attributes
+        newTask.className = "task";
+        newTask.setAttribute("title", taskValue);
+
+        buttonsContainer.className = "buttons";
+
+        deleteTask.className = "delete";
+        doneTask.className = "done";
+
+        // Adding Everything In Its Right Place
+        deleteTask.appendChild(deleteTaskText);
+        doneTask.appendChild(doneTaskText);
+
+        buttonsContainer.appendChild(doneTask);
+        buttonsContainer.appendChild(deleteTask);
+
+        newTask.prepend(newTaskText);
+
+        newTask.appendChild(buttonsContainer);
+
+        tasksContainer.appendChild(newTask);
+
+        // Delete & Done
+        deleteTask.addEventListener("click", function () {
+          newTask.remove();
+          let tasksObj = JSON.parse(localStorage.getItem("tasks")) || [];
+          let taskid = id;
+          updatedObj = tasksObj.filter(function (obj) {
+            return obj.id !== taskid;
+          });
+          localStorage.setItem("tasks", JSON.stringify(updatedObj));
+        });
+
+        if (isDone) {
+          newTask.style.textDecoration = "line-through";
+          newTask.style.opacity = "0.6";
+        }
+
+        doneTask.addEventListener("click", function () {
+          newTask.style.textDecoration = "line-through";
+          newTask.style.opacity = "0.6";
+          updateTaskStatus(id, true);
+        });
+
+        return newTask;
+      }
+
+      function addToLocalStorage(taskText, isDone, id) {
+        let tasksObj = JSON.parse(localStorage.getItem("tasks")) || [];
+        tasksObj.push({ id: id, title: taskText, stats: isDone });
+        localStorage.setItem("tasks", JSON.stringify(tasksObj));
+      }
+
+      function updateTaskStatus(taskId, isDone) {
+        let tasksObj = JSON.parse(localStorage.getItem("tasks")) || [];
+        tasksObj = tasksObj.map(function (task) {
+          if (task.id === taskId) {
+            task.stats = isDone;
+          }
+          return task;
+        });
+        localStorage.setItem("tasks", JSON.stringify(tasksObj));
+      }
+
+      function showInStorage() {
+        let tasksObj = JSON.parse(localStorage.getItem("tasks")) || [];
+        tasksObj.forEach((task) => {
+          buildingStructure(task.title, task.stats, task.id);
+        });
+      }
+
+      function createID() {
+        return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+      }
+
+      addButton.addEventListener("click", createTask);
+      window.onload = showInStorage;
+    </script>
+  </body>
+</html>
